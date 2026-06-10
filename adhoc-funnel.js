@@ -53,7 +53,7 @@
   var TOTAL = QUESTIONS.length;
   var MAX = QUESTIONS.reduce(function (s, q) { return s + Math.max.apply(null, q.options.map(function (o) { return o.r; })); }, 0);
 
-  function def() { return { step: 0, answers: new Array(TOTAL).fill(null), lead: { name: '', phone: '' }, screen: 'quiz' }; }
+  function def() { return { step: 0, answers: new Array(TOTAL).fill(null), lead: { name: '', phone: '', email: '' }, screen: 'quiz' }; }
   var state = def();
   try {
     var raw = localStorage.getItem('adhoc_funnel_21719_v1');
@@ -62,7 +62,7 @@
       state = {
         step: typeof p.step === 'number' ? p.step : 0,
         answers: Array.isArray(p.answers) && p.answers.length === TOTAL ? p.answers : new Array(TOTAL).fill(null),
-        lead: p.lead || { name: '', phone: '' },
+        lead: p.lead || { name: '', phone: '', email: '' },
         screen: p.screen || 'quiz'
       };
     }
@@ -130,12 +130,16 @@
 
   var nameI = document.getElementById('fnl-name');
   var phoneI = document.getElementById('fnl-phone');
+  var emailI = document.getElementById('fnl-email');
   var fName = document.getElementById('fnl-field-name');
   var fPhone = document.getElementById('fnl-field-phone');
+  var fEmail = document.getElementById('fnl-field-email');
   nameI.value = state.lead.name || '';
   phoneI.value = state.lead.phone || '';
+  emailI.value = state.lead.email || '';
   phoneI.addEventListener('input', function () { phoneI.value = phoneI.value.replace(/\D/g, '').slice(0, 9); fPhone.classList.remove('invalid'); });
   nameI.addEventListener('input', function () { fName.classList.remove('invalid'); });
+  emailI.addEventListener('input', function () { fEmail.classList.remove('invalid'); });
   document.getElementById('fnl-cap-back').addEventListener('click', function () {
     state.step = TOTAL - 1; save(); renderStep(); showScreen('quiz');
   });
@@ -154,6 +158,7 @@
     fd.append('_subject', 'Nuevo lead · Funnel Ley 21.719');
     fd.append('nombre', lead.nombre);
     fd.append('whatsapp', lead.whatsapp);
+    fd.append('email', lead.email);
     fd.append('puntaje', String(lead.puntaje));
     fd.append('nivel', lead.nivel);
     fd.append('respuestas', lead.resumen);
@@ -164,14 +169,16 @@
   document.getElementById('fnl-submit').addEventListener('click', function () {
     var name = nameI.value.trim();
     var phone = phoneI.value.replace(/\D/g, '');
+    var email = emailI.value.trim();
     var ok = true;
     if (name.length < 2) { fName.classList.add('invalid'); ok = false; }
     if (phone.length < 8 || phone.length > 9) { fPhone.classList.add('invalid'); ok = false; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { fEmail.classList.add('invalid'); ok = false; }
     if (!ok) return;
-    state.lead = { name: name, phone: phone };
+    state.lead = { name: name, phone: phone, email: email };
     save();
     var pct = score(), level = pct >= 60 ? 'alto' : pct >= 30 ? 'medio' : 'bajo';
-    submitLead({ nombre: name, whatsapp: '+56' + phone, puntaje: pct, nivel: level, resumen: buildSummary() });
+    submitLead({ nombre: name, whatsapp: '+56' + phone, email: email, puntaje: pct, nivel: level, resumen: buildSummary() });
     showScreen('result');
     renderResult();
   });
@@ -229,8 +236,10 @@
     save();
     nameI.value = '';
     phoneI.value = '';
+    emailI.value = '';
     fName.classList.remove('invalid');
     fPhone.classList.remove('invalid');
+    fEmail.classList.remove('invalid');
     renderStep();
     showScreen('quiz');
   });
@@ -243,10 +252,12 @@
       var lv = pct >= 60 ? LEVELS.high : pct >= 30 ? LEVELS.medium : LEVELS.low;
       var nm = document.getElementById('nombre');
       var tel = document.getElementById('telefono');
+      var em = document.getElementById('email');
       var area = document.getElementById('area');
       var msg = document.getElementById('mensaje');
       if (nm) nm.value = state.lead.name || '';
       if (tel) tel.value = state.lead.phone ? ('+56 ' + state.lead.phone) : '';
+      if (em) em.value = state.lead.email || '';
       if (area) area.value = 'ley21719';
       if (msg) msg.value = 'Hola, completé la evaluación de la Ley N° 21.719 y mi nivel de exposición fue ' + lv.word + ' (' + pct + '%). Me gustaría agendar la revisión legal personalizada.';
       /* el href="#contacto" hace el scroll */
